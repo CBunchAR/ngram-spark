@@ -1,16 +1,70 @@
 import { SearchTermData, NgramData, AnalysisConfig, AnalysisResults } from '@/types/ppc';
 
 export function parseCSVData(csvData: any[]): SearchTermData[] {
-  return csvData.map(row => ({
-    searchTerm: (row['Search Term'] || row['Search term'] || row['search_term'] || '').toString().toLowerCase().trim(),
-    impressions: parseFloat(row['Impressions'] || row['impressions'] || '0') || 0,
-    clicks: parseFloat(row['Clicks'] || row['clicks'] || '0') || 0,
-    cost: parseFloat(row['Cost'] || row['cost'] || '0') || 0,
-    conversions: parseFloat(row['Conversions'] || row['conversions'] || '0') || 0,
-    ctr: parseFloat(row['CTR'] || row['ctr'] || '0') || 0,
-    cpc: parseFloat(row['CPC'] || row['cpc'] || '0') || 0,
-    conversionRate: parseFloat(row['Conv. rate'] || row['conv_rate'] || row['conversion_rate'] || '0') || 0,
-  })).filter(item => item.searchTerm && item.impressions > 0);
+  // Helper function to parse numeric values, handling Google Ads format (commas, --, etc.)
+  const parseNumericValue = (value: any): number => {
+    if (!value || value === '' || value === ' --' || value === '--') return 0;
+    // Remove commas and quotes, then parse
+    const cleanValue = value.toString().replace(/[",]/g, '').trim();
+    const parsed = parseFloat(cleanValue);
+    return isNaN(parsed) ? 0 : parsed;
+  };
+  
+  // Parse CTR percentage - remove % sign
+  const parseCTR = (value: any): number => {
+    if (!value || value === '' || value === ' --' || value === '--') return 0;
+    const cleanValue = value.toString().replace(/[%",]/g, '').trim();
+    const parsed = parseFloat(cleanValue);
+    return isNaN(parsed) ? 0 : parsed;
+  };
+  
+  // Parse conversion rate percentage
+  const parseConvRate = (value: any): number => {
+    if (!value || value === '' || value === ' --' || value === '--') return 0;
+    const cleanValue = value.toString().replace(/[%",]/g, '').trim();
+    const parsed = parseFloat(cleanValue);
+    return isNaN(parsed) ? 0 : parsed;
+  };
+
+  const parsedData = csvData.map(row => {
+    const searchTerm = (row['Search term'] || row['Search Term'] || row['search_term'] || '').toString().toLowerCase().trim();
+    
+    const impressions = parseNumericValue(row['Impr.'] || row['Impressions'] || row['impressions']);
+    const clicks = parseNumericValue(row['Clicks'] || row['clicks']);
+    const cost = parseNumericValue(row['Cost'] || row['cost']);
+    const conversions = parseNumericValue(row['Conversions'] || row['conversions']);
+    const ctr = parseCTR(row['CTR'] || row['ctr']);
+    const cpc = parseNumericValue(row['Avg. CPC'] || row['CPC'] || row['cpc']);
+    const conversionRate = parseConvRate(row['Conv. rate'] || row['conv_rate'] || row['conversion_rate']);
+
+    return {
+      searchTerm,
+      impressions,
+      clicks,
+      cost,
+      conversions,
+      ctr,
+      cpc,
+      conversionRate,
+    };
+  });
+  
+  const filteredData = parsedData.filter(item => {
+    // Filter out invalid rows:
+    // 1. Must have a search term
+    // 2. Must not be summary rows (containing "Total:")
+    // 3. Must have some meaningful data
+    const hasSearchTerm = item.searchTerm && item.searchTerm.length > 0;
+    const notSummaryRow = !item.searchTerm.includes('total:') && 
+                         !item.searchTerm.includes('search terms') && 
+                         !item.searchTerm.includes('total');
+    const hasData = item.impressions > 0 || item.clicks > 0 || item.cost > 0 || item.conversions > 0;
+    
+    return hasSearchTerm && notSummaryRow && hasData;
+  });
+  
+  console.log(`Successfully parsed ${filteredData.length} search terms from ${parsedData.length} total rows`);
+  return filteredData;
 }
 
 export function generateNgrams(text: string, n: number): string[] {
@@ -116,11 +170,16 @@ export function analyzeNgrams(data: SearchTermData[], config: AnalysisConfig): A
     }).sort((a, b) => b.totalImpressions - a.totalImpressions);
   }
 
-  // Calculate summary statistics
-  const totalImpressions = filteredData.reduce((sum, item) => sum + item.impressions, 0);
-  const totalClicks = filteredData.reduce((sum, item) => sum + item.clicks, 0);
-  const totalCost = filteredData.reduce((sum, item) => sum + item.cost, 0);
-  const totalConversions = filteredData.reduce((sum, item) => sum + item.conversions, 0);
+  // Calculate summary statistics from all original data (not just filtered data)
+  // This gives the true totals from the uploaded CSV
+  const totalImpressions = data.reduce((sum, item) => sum + item.impressions, 0);
+  const totalClicks = data.reduce((sum, item) => sum + item.clicks, 0);
+  const totalCost = data.reduce((sum, item) => sum + item.cost, 0);
+  const totalConversions = data.reduce((sum, item) => sum + item.conversions, 0);
+
+  // Note: N-gram cost totals in the tables above represent the cumulative cost 
+  // associated with each n-gram across all search terms containing it.
+  // This helps identify high-impact n-grams but will sum to more than the actual spend.
 
   return {
     unigrams: allNgrams[1] || [],
@@ -128,7 +187,7 @@ export function analyzeNgrams(data: SearchTermData[], config: AnalysisConfig): A
     trigrams: allNgrams[3] || [],
     fourgrams: allNgrams[4] || [],
     summary: {
-      totalSearchTerms: filteredData.length,
+      totalSearchTerms: data.length, // Total from uploaded CSV
       totalImpressions,
       totalClicks,
       totalCost,

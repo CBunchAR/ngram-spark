@@ -28,32 +28,77 @@ export function FileUpload({ onDataLoaded, isLoading }: FileUploadProps) {
       return;
     }
 
-    Papa.parse(file, {
-      header: true,
-      skipEmptyLines: true,
-      complete: (results) => {
-        try {
-          if (results.errors.length > 0) {
-            setError('Error parsing CSV file');
-            return;
+    // First, read the file as text to preprocess it for Google Ads format
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const csvText = e.target?.result as string;
+        
+        // Split into lines and find the actual header row
+        const lines = csvText.split('\n');
+        let headerRowIndex = -1;
+        let processedLines: string[] = [];
+        
+        // Look for the line that contains the actual column headers
+        for (let i = 0; i < lines.length; i++) {
+          const line = lines[i].toLowerCase();
+          if (line.includes('search term') && line.includes('clicks') && line.includes('cost')) {
+            headerRowIndex = i;
+            break;
           }
-
-          const data = parseCSVData(results.data);
-          
-          if (data.length === 0) {
-            setError('No valid data found. Please ensure your CSV has the required columns: Search Term, Impressions, Clicks, Cost, Conversions');
-            return;
-          }
-
-          onDataLoaded(data);
-        } catch (err) {
-          setError('Error processing file data');
         }
-      },
-      error: () => {
-        setError('Error reading file');
+        
+        if (headerRowIndex === -1) {
+          setError('Could not find valid column headers. Please ensure this is a Google Ads search term report.');
+          return;
+        }
+        
+        // Include the header row and all data rows after it
+        processedLines = lines.slice(headerRowIndex);
+        
+        // Join back into CSV text
+        const processedCsvText = processedLines.join('\n');
+        
+        // Now parse with Papa Parse
+        Papa.parse(processedCsvText, {
+          header: true,
+          skipEmptyLines: true,
+          dynamicTyping: false,
+          transformHeader: (header: string) => {
+            return header.trim();
+          },
+          complete: (results) => {
+            try {
+              const data = parseCSVData(results.data);
+              
+              if (data.length === 0) {
+                setError('No valid search term data found. Please ensure your CSV is a Google Ads search term report with search terms that have data.');
+                return;
+              }
+
+              onDataLoaded(data);
+            } catch (err) {
+              console.error('Error processing CSV:', err);
+              setError('Error processing file data. Please check that this is a valid Google Ads search term report.');
+            }
+          },
+          error: (error) => {
+            console.error('Papa Parse error:', error);
+            setError('Error parsing CSV. Please ensure this is a valid CSV file.');
+          }
+        });
+        
+      } catch (err) {
+        console.error('Error reading file:', err);
+        setError('Error reading file. Please try again.');
       }
-    });
+    };
+    
+    reader.onerror = () => {
+      setError('Error reading file. Please try again.');
+    };
+    
+    reader.readAsText(file);
   }, [onDataLoaded]);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
@@ -139,16 +184,19 @@ export function FileUpload({ onDataLoaded, isLoading }: FileUploadProps) {
       )}
 
       <div className="mt-6 text-sm text-muted-foreground">
-        <p className="font-medium mb-2">Required CSV columns:</p>
+        <p className="font-medium mb-2">Google Ads Search Term Report Format:</p>
         <ul className="list-disc list-inside space-y-1 text-xs">
-          <li>Search Term (or Search term)</li>
-          <li>Impressions</li>
+          <li>Search term</li>
+          <li>Impr. (Impressions)</li>
           <li>Clicks</li>
           <li>Cost</li>
           <li>Conversions</li>
+          <li>CTR (optional)</li>
+          <li>Avg. CPC (optional)</li>
+          <li>Conv. rate (optional)</li>
         </ul>
         <p className="mt-3 text-xs">
-          This tool works with standard Google Ads search term report exports.
+          Export your search term report directly from Google Ads. The tool will automatically handle header rows and summary data.
         </p>
       </div>
     </Card>

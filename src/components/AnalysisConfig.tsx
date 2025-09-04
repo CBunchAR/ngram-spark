@@ -34,17 +34,17 @@ export function AnalysisConfig({
     <Card className="p-6">
       <div className="flex items-center gap-3 mb-6">
         <Settings className="w-5 h-5 text-primary" />
-        <h3 className="text-lg font-semibold">Analysis Configuration</h3>
+        <h3 className="text-lg font-semibold text-gray-900">Analysis Configuration</h3>
       </div>
 
       <div className="space-y-6">
         {/* N-gram sizes */}
         <div>
-          <Label className="text-base font-medium mb-3 block">N-gram Sizes</Label>
+          <Label className="text-base font-medium mb-3 block text-gray-900">N-gram Sizes</Label>
           <div className="grid grid-cols-2 gap-4">
             {[1, 2, 3, 4].map(size => (
               <div key={size} className="flex items-center justify-between p-3 border rounded-lg">
-                <Label htmlFor={`ngram-${size}`} className="text-sm">
+                <Label htmlFor={`ngram-${size}`} className="text-sm text-gray-800">
                   {size}-gram {size === 1 ? '(words)' : size === 2 ? '(phrases)' : ''}
                 </Label>
                 <Switch
@@ -59,10 +59,10 @@ export function AnalysisConfig({
 
         {/* Minimum thresholds */}
         <div>
-          <Label className="text-base font-medium mb-3 block">Minimum Thresholds</Label>
+          <Label className="text-base font-medium mb-3 block text-gray-900">Minimum Thresholds</Label>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <Label htmlFor="min-impressions" className="text-sm text-muted-foreground">
+              <Label htmlFor="min-impressions" className="text-sm text-gray-700">
                 Min Impressions
               </Label>
               <Input
@@ -78,7 +78,7 @@ export function AnalysisConfig({
               />
             </div>
             <div>
-              <Label htmlFor="min-clicks" className="text-sm text-muted-foreground">
+              <Label htmlFor="min-clicks" className="text-sm text-gray-700">
                 Min Clicks
               </Label>
               <Input
@@ -94,7 +94,7 @@ export function AnalysisConfig({
               />
             </div>
             <div>
-              <Label htmlFor="min-cost" className="text-sm text-muted-foreground">
+              <Label htmlFor="min-cost" className="text-sm text-gray-700">
                 Min Cost ($)
               </Label>
               <Input
@@ -117,10 +117,10 @@ export function AnalysisConfig({
         <div className="pt-4 border-t">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-gray-700">
                 Ready to analyze {dataCount.toLocaleString()} search terms
               </p>
-              <p className="text-xs text-muted-foreground mt-1">
+              <p className="text-xs text-gray-600 mt-1">
                 Selected N-gram sizes: {config.ngramSizes.join(', ') || 'None'}
               </p>
             </div>

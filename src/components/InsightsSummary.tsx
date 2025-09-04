@@ -86,9 +86,9 @@ export function InsightsSummary({ results }: InsightsSummaryProps) {
           <Icon className={`w-5 h-5 ${color}`} />
         </div>
         <div>
-          <p className="text-sm text-muted-foreground">{title}</p>
-          <p className="text-lg font-semibold">{value}</p>
-          {subtitle && <p className="text-xs text-muted-foreground">{subtitle}</p>}
+          <p className="text-sm text-gray-600">{title}</p>
+          <p className="text-lg font-semibold text-gray-900">{value}</p>
+          {subtitle && <p className="text-xs text-gray-500">{subtitle}</p>}
         </div>
       </div>
     </Card>
@@ -100,7 +100,7 @@ export function InsightsSummary({ results }: InsightsSummaryProps) {
       <Card className="p-6">
         <div className="flex items-center gap-3 mb-6">
           <BarChart3 className="w-5 h-5 text-primary" />
-          <h3 className="text-lg font-semibold">Campaign Summary</h3>
+          <h3 className="text-lg font-semibold text-gray-900">Campaign Summary</h3>
         </div>
         
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -136,7 +136,7 @@ export function InsightsSummary({ results }: InsightsSummaryProps) {
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
             <TrendingUp className="w-5 h-5 text-success" />
-            <h3 className="text-lg font-semibold">Top Performing N-grams</h3>
+            <h3 className="text-lg font-semibold text-gray-900">Top Performing N-grams</h3>
           </div>
           {getTopPerformers().length > 0 && (
             <Button
@@ -155,8 +155,8 @@ export function InsightsSummary({ results }: InsightsSummaryProps) {
             {getTopPerformers().map((item, index) => (
               <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
                 <div className="flex-1">
-                  <p className="font-medium text-sm">{item.ngram}</p>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="font-medium text-sm text-gray-900">{item.ngram}</p>
+                  <p className="text-xs text-gray-600">
                     {item.totalConversions} conversions • {formatPercentage(item.conversionRate)} rate
                   </p>
                 </div>
@@ -164,7 +164,7 @@ export function InsightsSummary({ results }: InsightsSummaryProps) {
                   <Badge className="bg-success text-success-foreground mb-1">
                     {formatCurrency(item.totalCost / item.totalConversions)} cost/conv
                   </Badge>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-gray-600">
                     {item.totalImpressions.toLocaleString()} impressions
                   </p>
                 </div>
@@ -172,7 +172,7 @@ export function InsightsSummary({ results }: InsightsSummaryProps) {
             ))}
           </div>
         ) : (
-          <p className="text-muted-foreground text-center py-4">
+          <p className="text-gray-600 text-center py-4">
             No high-performing n-grams found. Try adjusting your analysis thresholds.
           </p>
         )}
@@ -183,7 +183,7 @@ export function InsightsSummary({ results }: InsightsSummaryProps) {
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
             <TrendingDown className="w-5 h-5 text-destructive" />
-            <h3 className="text-lg font-semibold">Negative Keyword Candidates</h3>
+            <h3 className="text-lg font-semibold text-gray-900">Negative Keyword Candidates</h3>
           </div>
           {getPoorPerformers().length > 0 && (
             <Button
@@ -202,8 +202,8 @@ export function InsightsSummary({ results }: InsightsSummaryProps) {
             {getPoorPerformers().map((item, index) => (
               <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
                 <div className="flex-1">
-                  <p className="font-medium text-sm">{item.ngram}</p>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="font-medium text-sm text-gray-900">{item.ngram}</p>
+                  <p className="text-xs text-gray-600">
                     {formatPercentage(item.ctr)} CTR • {formatPercentage(item.conversionRate)} conv rate
                   </p>
                 </div>
@@ -211,7 +211,7 @@ export function InsightsSummary({ results }: InsightsSummaryProps) {
                   <Badge className="bg-destructive text-destructive-foreground mb-1">
                     {formatCurrency(item.totalCost)} wasted
                   </Badge>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-gray-600">
                     {item.frequency} search terms
                   </p>
                 </div>
@@ -219,7 +219,7 @@ export function InsightsSummary({ results }: InsightsSummaryProps) {
             ))}
           </div>
         ) : (
-          <p className="text-muted-foreground text-center py-4">
+          <p className="text-gray-600 text-center py-4">
             No clear negative keyword candidates identified.
           </p>
         )}
@@ -231,7 +231,7 @@ export function InsightsSummary({ results }: InsightsSummaryProps) {
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
               <AlertTriangle className="w-5 h-5 text-warning" />
-              <h3 className="text-lg font-semibold">Optimization Opportunities</h3>
+              <h3 className="text-lg font-semibold text-gray-900">Optimization Opportunities</h3>
             </div>
             <Button
               variant="outline"
@@ -247,8 +247,8 @@ export function InsightsSummary({ results }: InsightsSummaryProps) {
             {getOpportunities().map((item, index) => (
               <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
                 <div className="flex-1">
-                  <p className="font-medium text-sm">{item.ngram}</p>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="font-medium text-sm text-gray-900">{item.ngram}</p>
+                  <p className="text-xs text-gray-600">
                     High impressions, decent CTR, but no conversions yet
                   </p>
                 </div>
@@ -256,7 +256,7 @@ export function InsightsSummary({ results }: InsightsSummaryProps) {
                   <Badge className="bg-warning text-warning-foreground mb-1">
                     {formatPercentage(item.ctr)} CTR
                   </Badge>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-gray-600">
                     {item.totalImpressions.toLocaleString()} impressions
                   </p>
                 </div>
