@@ -13,14 +13,15 @@ import {
   BarChart3,
   Download
 } from 'lucide-react';
-import { AnalysisResults, NgramData } from '@/types/ppc';
+import { AnalysisResults, NgramData, OptimizationMode } from '@/types/ppc';
 import { generateNegativeKeywords, exportToCsv } from '@/utils/ngramAnalysis';
 
 interface InsightsSummaryProps {
   results: AnalysisResults;
+  optimizationMode: OptimizationMode;
 }
 
-export function InsightsSummary({ results }: InsightsSummaryProps) {
+export function InsightsSummary({ results, optimizationMode }: InsightsSummaryProps) {
   const { summary } = results;
   
   const getAllNgrams = (): NgramData[] => {
@@ -28,10 +29,19 @@ export function InsightsSummary({ results }: InsightsSummaryProps) {
   };
 
   const getTopPerformers = (limit = 10): NgramData[] => {
-    return getAllNgrams()
-      .filter(item => item.performanceScore === 'good' && item.totalConversions > 0)
-      .sort((a, b) => b.totalConversions - a.totalConversions)
-      .slice(0, limit);
+    const allNgrams = getAllNgrams().filter(item => item.performanceScore === 'good');
+    
+    if (optimizationMode === 'conversions') {
+      return allNgrams
+        .filter(item => item.totalConversions > 0)
+        .sort((a, b) => b.totalConversions - a.totalConversions)
+        .slice(0, limit);
+    } else {
+      return allNgrams
+        .filter(item => item.totalClicks > 0)
+        .sort((a, b) => b.totalClicks - a.totalClicks)
+        .slice(0, limit);
+    }
   };
 
   const getPoorPerformers = (limit = 10): NgramData[] => {
@@ -42,14 +52,26 @@ export function InsightsSummary({ results }: InsightsSummaryProps) {
   };
 
   const getOpportunities = (limit = 10): NgramData[] => {
-    return getAllNgrams()
-      .filter(item => 
-        item.totalImpressions > 1000 && 
-        item.totalConversions === 0 && 
-        item.ctr > 2
-      )
-      .sort((a, b) => b.totalImpressions - a.totalImpressions)
-      .slice(0, limit);
+    if (optimizationMode === 'conversions') {
+      return getAllNgrams()
+        .filter(item => 
+          item.totalImpressions > 1000 && 
+          item.totalConversions === 0 && 
+          item.ctr > 2
+        )
+        .sort((a, b) => b.totalImpressions - a.totalImpressions)
+        .slice(0, limit);
+    } else {
+      // For clicks mode, show high impression terms with low CTR as opportunities
+      return getAllNgrams()
+        .filter(item => 
+          item.totalImpressions > 1000 && 
+          item.ctr < 2 &&
+          item.ctr > 0.5 // Some potential but underperforming
+        )
+        .sort((a, b) => b.totalImpressions - a.totalImpressions)
+        .slice(0, limit);
+    }
   };
 
   const handleExportNegativeKeywords = () => {
@@ -136,7 +158,9 @@ export function InsightsSummary({ results }: InsightsSummaryProps) {
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
             <TrendingUp className="w-5 h-5 text-success" />
-            <h3 className="text-lg font-semibold text-gray-900">Top Performing N-grams</h3>
+            <h3 className="text-lg font-semibold text-gray-900">
+              Top Performing N-grams {optimizationMode === 'conversions' ? '(by Conversions)' : '(by Clicks)'}
+            </h3>
           </div>
           {getTopPerformers().length > 0 && (
             <Button
@@ -157,12 +181,18 @@ export function InsightsSummary({ results }: InsightsSummaryProps) {
                 <div className="flex-1">
                   <p className="font-medium text-sm text-gray-900">{item.ngram}</p>
                   <p className="text-xs text-gray-600">
-                    {item.totalConversions} conversions • {formatPercentage(item.conversionRate)} rate
+                    {optimizationMode === 'conversions' 
+                      ? `${item.totalConversions} conversions • ${formatPercentage(item.conversionRate)} rate`
+                      : `${item.totalClicks.toLocaleString()} clicks • ${formatPercentage(item.ctr)} CTR`
+                    }
                   </p>
                 </div>
                 <div className="text-right">
                   <Badge className="bg-success text-success-foreground mb-1">
-                    {formatCurrency(item.totalCost / item.totalConversions)} cost/conv
+                    {optimizationMode === 'conversions' 
+                      ? `${formatCurrency(item.totalCost / item.totalConversions)} cost/conv`
+                      : `${formatCurrency(item.cpc)} CPC`
+                    }
                   </Badge>
                   <p className="text-xs text-gray-600">
                     {item.totalImpressions.toLocaleString()} impressions
@@ -249,7 +279,10 @@ export function InsightsSummary({ results }: InsightsSummaryProps) {
                 <div className="flex-1">
                   <p className="font-medium text-sm text-gray-900">{item.ngram}</p>
                   <p className="text-xs text-gray-600">
-                    High impressions, decent CTR, but no conversions yet
+                    {optimizationMode === 'conversions' 
+                      ? 'High impressions, decent CTR, but no conversions yet'
+                      : 'High impressions but low CTR - optimization opportunity'
+                    }
                   </p>
                 </div>
                 <div className="text-right">

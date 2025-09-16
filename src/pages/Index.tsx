@@ -9,7 +9,9 @@ import { InsightsSummary } from '@/components/InsightsSummary';
 import NgramDashboard from '@/components/NgramDashboard';
 import { ClientManager } from '@/components/ClientManager';
 import { AnalysisHistory } from '@/components/AnalysisHistory';
-import { SearchTermData, AnalysisResults, AnalysisConfig as AnalysisConfigType } from '@/types/ppc';
+import { OptimizationModeSelector } from '@/components/OptimizationModeSelector';
+import { PerformanceThresholds } from '@/components/PerformanceThresholds';
+import { SearchTermData, AnalysisResults, AnalysisConfig as AnalysisConfigType, OptimizationMode, PerformanceThresholds as PerformanceThresholdsType } from '@/types/ppc';
 import { Client } from '@/types/client';
 import { analyzeNgrams } from '@/utils/ngramAnalysis';
 import { BarChart3, Lightbulb, FileText, SidebarOpen, SidebarClose } from 'lucide-react';
@@ -26,6 +28,13 @@ const Index = () => {
     minImpressions: 10,
     minClicks: 1,
     minCost: 0.01,
+    optimizationMode: 'conversions' as OptimizationMode,
+    performanceThresholds: {
+      ctr: { good: 3, poor: 1 },
+      cpc: { good: 2, poor: 5 },
+      conversionRate: { good: 2, poor: 0.5 },
+      minVolume: { clicks: 10, conversions: 1 }
+    }
   });
 
   const handleDataLoaded = (data: SearchTermData[]) => {
@@ -152,6 +161,18 @@ const Index = () => {
               </div>
             </Card>
 
+            <OptimizationModeSelector
+              selectedMode={config.optimizationMode}
+              onModeChange={(mode) => setConfig(prev => ({ ...prev, optimizationMode: mode }))}
+              totalConversions={searchTermData.reduce((sum, item) => sum + item.conversions, 0)}
+            />
+
+            <PerformanceThresholds
+              thresholds={config.performanceThresholds}
+              optimizationMode={config.optimizationMode}
+              onThresholdsChange={(thresholds) => setConfig(prev => ({ ...prev, performanceThresholds: thresholds }))}
+            />
+
             <AnalysisConfig
               config={config}
               onConfigChange={setConfig}
@@ -217,7 +238,7 @@ const Index = () => {
                   </TabsContent>
 
                   <TabsContent value="insights">
-                    <InsightsSummary results={analysisResults} />
+                    <InsightsSummary results={analysisResults} optimizationMode={config.optimizationMode} />
                   </TabsContent>
                 </Tabs>
 

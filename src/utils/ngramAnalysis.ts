@@ -1,4 +1,4 @@
-import { SearchTermData, NgramData, AnalysisConfig, AnalysisResults } from '@/types/ppc';
+import { SearchTermData, NgramData, AnalysisConfig, AnalysisResults, OptimizationMode, PerformanceThresholds } from '@/types/ppc';
 
 export function parseCSVData(csvData: any[]): SearchTermData[] {
   // Helper function to parse numeric values, handling Google Ads format (commas, --, etc.)
@@ -78,20 +78,56 @@ export function generateNgrams(text: string, n: number): string[] {
   return ngrams;
 }
 
-export function calculatePerformanceScore(ngram: NgramData): 'good' | 'warning' | 'poor' {
-  const { ctr, conversionRate, cpc, totalConversions } = ngram;
+export function calculatePerformanceScore(
+  ngram: NgramData, 
+  optimizationMode: OptimizationMode,
+  thresholds: PerformanceThresholds
+): 'good' | 'warning' | 'poor' {
+  const { ctr, conversionRate, cpc, totalConversions, totalClicks } = ngram;
   
-  // Good performance: High CTR, good conversion rate, reasonable CPC
-  if (ctr > 3 && conversionRate > 2 && totalConversions > 0) {
-    return 'good';
+  if (optimizationMode === 'conversions') {
+    // Conversion-focused scoring using custom thresholds
+    const hasGoodCtr = ctr >= thresholds.ctr.good;
+    const hasGoodConvRate = conversionRate >= thresholds.conversionRate.good;
+    const hasGoodCpc = cpc <= thresholds.cpc.good;
+    const hasMinConversions = totalConversions >= thresholds.minVolume.conversions;
+    
+    // Good performance: Meets CTR, conversion rate, CPC, and volume thresholds
+    if (hasGoodCtr && hasGoodConvRate && hasGoodCpc && hasMinConversions) {
+      return 'good';
+    }
+    
+    // Poor performance: Below poor thresholds
+    const hasPoorCtr = ctr < thresholds.ctr.poor;
+    const hasPoorConvRate = conversionRate < thresholds.conversionRate.poor;
+    const hasPoorCpc = cpc > thresholds.cpc.poor;
+    
+    if (hasPoorCtr || (hasPoorConvRate && hasPoorCpc)) {
+      return 'poor';
+    }
+    
+    return 'warning';
+  } else {
+    // Click-focused scoring using custom thresholds
+    const hasGoodCtr = ctr >= thresholds.ctr.good;
+    const hasGoodCpc = cpc <= thresholds.cpc.good;
+    const hasMinClicks = totalClicks >= thresholds.minVolume.clicks;
+    
+    // Good performance: High CTR, reasonable CPC, good click volume
+    if (hasGoodCtr && hasGoodCpc && hasMinClicks) {
+      return 'good';
+    }
+    
+    // Poor performance: Below poor thresholds
+    const hasPoorCtr = ctr < thresholds.ctr.poor;
+    const hasPoorCpc = cpc > thresholds.cpc.poor;
+    
+    if (hasPoorCtr || hasPoorCpc) {
+      return 'poor';
+    }
+    
+    return 'warning';
   }
-  
-  // Poor performance: Low CTR and conversion rate, or very high CPC with low conversions
-  if (ctr < 1 || (conversionRate < 0.5 && cpc > 5)) {
-    return 'poor';
-  }
-  
-  return 'warning';
 }
 
 export function analyzeNgrams(data: SearchTermData[], config: AnalysisConfig): AnalysisResults {
@@ -165,7 +201,7 @@ export function analyzeNgrams(data: SearchTermData[], config: AnalysisConfig): A
         performanceScore: 'good' // Will be calculated below
       };
       
-      ngramData.performanceScore = calculatePerformanceScore(ngramData);
+      ngramData.performanceScore = calculatePerformanceScore(ngramData, config.optimizationMode, config.performanceThresholds);
       return ngramData;
     }).sort((a, b) => b.totalImpressions - a.totalImpressions);
   }
